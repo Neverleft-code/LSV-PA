@@ -1,21 +1,13 @@
 /**CFile****************************************************************
-
   FileName    [abcFunc.c]
-
   SystemName  [ABC: Logic synthesis and verification system.]
-
   PackageName [Network and node package.]
-
   Synopsis    [Experimental procedures.]
-
   Author      [Alan Mishchenko]
   
   Affiliation [UC Berkeley]
-
   Date        [Ver. 1.0. Started - June 20, 2005.]
-
   Revision    [$Id: abcFunc.c,v 1.00 2005/06/20 00:00:00 alanmi Exp $]
-
 ***********************************************************************/
 
 #include "acb.h"
@@ -115,15 +107,11 @@ static inline char * Acb_Oper2Name( int i )
 ////////////////////////////////////////////////////////////////////////
 
 /**Function*************************************************************
-
   Synopsis    [Installs the required standard cell library.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 char * pLibStr[25] = {
     "GATE buf        1       O=a;            PIN * INV 1 999 1.0 0.0 1.0 0.0\n"
@@ -176,15 +164,11 @@ void Acb_IntallLibrary( int f2Ins )
 }
 
 /**Function*************************************************************
-
   Synopsis    [Parse Verilog file into an intermediate representation.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 Abc_Nam_t * Acb_VerilogStartNames()
 {
@@ -242,10 +226,8 @@ int Acb_WireIsTarget( int Token, Abc_Nam_t * pNames )
     char * pStr = Abc_NamStr(pNames, Token);
     return pStr[0] == 't' && pStr[1] == '_';
 }
-void * Acb_VerilogSimpleParse( Vec_Int_t * vBuffer, Abc_Nam_t * pNames, char weightstr[], char * pFileNameW )
+void * Acb_VerilogSimpleParse( Vec_Int_t * vBuffer, Abc_Nam_t * pNames )
 {
-    //char weightstr[80];
-    if(pFileNameW) strcpy(weightstr," ");
     Ndr_Data_t * pDesign = NULL;
     Vec_Int_t * vInputs  = Vec_IntAlloc(100);
     Vec_Int_t * vOutputs = Vec_IntAlloc(100);
@@ -283,15 +265,8 @@ void * Acb_VerilogSimpleParse( Vec_Int_t * vBuffer, Abc_Nam_t * pNames, char wei
     ModuleID = Ndr_AddModule( pDesign, Vec_IntEntry(vBuffer, 1) );
     // create inputs
     Ndr_DataResize( pDesign, Vec_IntSize(vInputs) );
-    Vec_IntForEachEntry( vInputs, Token, i ){
-        if(pFileNameW){
-            char * pStr = Abc_NamStr(pNames, Token);
-            strcat(weightstr, pStr);
-            strcat(weightstr, " 1 ");
-        }
+    Vec_IntForEachEntry( vInputs, Token, i )
         Ndr_DataPush( pDesign, NDR_INPUT, Token );
-    }
-    //printf("%s ",weightstr);
     Ndr_DataAddTo( pDesign, ModuleID-256, Vec_IntSize(vInputs) );
     Ndr_DataAddTo( pDesign, 0, Vec_IntSize(vInputs) );
     // create outputs
@@ -305,13 +280,6 @@ void * Acb_VerilogSimpleParse( Vec_Int_t * vBuffer, Abc_Nam_t * pNames, char wei
     Vec_IntForEachEntry( vWires, Token, i )
         if ( Acb_WireIsTarget(Token, pNames) )
             Ndr_DataPush( pDesign, NDR_TARGET, Token ), Count++;
-        else{
-            if(pFileNameW){
-                char * pStr2 = Abc_NamStr(pNames, Token);
-                strcat(weightstr, pStr2);
-                strcat(weightstr, " 1 ");
-            }
-        }
     Ndr_DataAddTo( pDesign, ModuleID-256, Count );
     Ndr_DataAddTo( pDesign, 0, Count );
     // create nodes
@@ -343,21 +311,16 @@ void * Acb_VerilogSimpleParse( Vec_Int_t * vBuffer, Abc_Nam_t * pNames, char wei
 }
 
 /**Function*************************************************************
-
   Synopsis    [Read weights of nodes from the weight file.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 Vec_Int_t * Acb_ReadWeightMap( char * pFileName, Abc_Nam_t * pNames )
 {
     Vec_Int_t * vWeights = Vec_IntStartFull( Abc_NamObjNumMax(pNames) );
-    //char * pBuffer = Extra_FileReadContents( pFileName );
-    char *pBuffer = pFileName;
+    char * pBuffer = Extra_FileReadContents( pFileName );
     char * pToken, * pNum;
     if ( pBuffer == NULL )
         return NULL;
@@ -376,20 +339,16 @@ Vec_Int_t * Acb_ReadWeightMap( char * pFileName, Abc_Nam_t * pNames )
         pToken = strtok( NULL, "  \n\r(),;" );
         pNum = strtok( NULL, "  \n\r(),;" );
     }
-    //ABC_FREE( pBuffer );
+    ABC_FREE( pBuffer );
     return vWeights;
 }
 
 /**Function*************************************************************
-
   Synopsis    [Create network from the intermediate representation.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 Acb_Ntk_t * Acb_VerilogSimpleRead( char * pFileName, char * pFileNameW )
 {
@@ -397,11 +356,8 @@ Acb_Ntk_t * Acb_VerilogSimpleRead( char * pFileName, char * pFileNameW )
     Acb_Ntk_t * pNtk;
     Abc_Nam_t * pNames = Acb_VerilogStartNames();
     Vec_Int_t * vBuffer = Acb_VerilogSimpleLex( pFileName, pNames );
-    char weightstr[80];
-    void * pModule = vBuffer ? Acb_VerilogSimpleParse( vBuffer, pNames, weightstr, pFileNameW ) : NULL;
-    //if(pFileNameW) printf("%s ",weightstr);
-    //Vec_Int_t * vWeights = pFileNameW ? Acb_ReadWeightMap( pFileNameW, pNames ) : NULL;
-    Vec_Int_t * vWeights = pFileNameW ? Acb_ReadWeightMap( weightstr, pNames ) : NULL;
+    void * pModule = vBuffer ? Acb_VerilogSimpleParse( vBuffer, pNames ) : NULL;
+    Vec_Int_t * vWeights = pFileNameW ? Acb_ReadWeightMap( pFileNameW, pNames ) : NULL;
     if ( pFileName && pModule == NULL )
     {
         printf( "Cannot read input file \"%s\".\n", pFileName );
@@ -422,15 +378,11 @@ Acb_Ntk_t * Acb_VerilogSimpleRead( char * pFileName, char * pFileNameW )
 }
 
 /**Function*************************************************************
-
   Synopsis    [Write Verilog for sanity checking.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 void Acb_VerilogSimpleWrite( Acb_Ntk_t * p, char * pFileName )
 {
@@ -497,15 +449,11 @@ void Acb_VerilogSimpleWrite( Acb_Ntk_t * p, char * pFileName )
 
 
 /**Function*************************************************************
-
   Synopsis    [Compute roots (PO nodes in the TFO of the targets in F).]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 int Acb_NtkFindRoots_rec( Acb_Ntk_t * p, int iObj, Vec_Bit_t * vBlock )
 {
@@ -551,15 +499,11 @@ Vec_Int_t * Acb_NtkFindRoots( Acb_Ntk_t * p, Vec_Int_t * vTargets, Vec_Bit_t ** 
 }
 
 /**Function*************************************************************
-
   Synopsis    [Compute support in the TFI of the roots.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 void Acb_NtkFindSupp_rec( Acb_Ntk_t * p, int iObj, Vec_Int_t * vSupp )
 {
@@ -585,15 +529,11 @@ Vec_Int_t * Acb_NtkFindSupp( Acb_Ntk_t * p, Vec_Int_t * vRoots )
 }
 
 /**Function*************************************************************
-
   Synopsis    [Collect divisors whose support is completely contained in vSupp.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 int Acb_NtkFindDivs_rec( Acb_Ntk_t * p, int iObj )
 {
@@ -672,15 +612,11 @@ Vec_Int_t * Acb_NtkFindDivs( Acb_Ntk_t * p, Vec_Int_t * vSupp, Vec_Bit_t * vBloc
 }
 
 /**Function*************************************************************
-
   Synopsis    [Compute support and internal nodes in the TFI of the roots.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 void Acb_NtkFindNodes_rec( Acb_Ntk_t * p, int iObj, Vec_Int_t * vNodes )
 {
@@ -708,15 +644,11 @@ Vec_Int_t * Acb_NtkFindNodes( Acb_Ntk_t * p, Vec_Int_t * vRoots, Vec_Int_t * vDi
 }
 
 /**Function*************************************************************
-
   Synopsis    [Derive AIG for one network.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 int Acb_ObjToGia( Gia_Man_t * pNew, Acb_Ntk_t * p, int iObj, Vec_Int_t * vTemp )
 {
@@ -798,15 +730,11 @@ Gia_Man_t * Acb_NtkToGia( Acb_Ntk_t * p, Vec_Int_t * vSupp, Vec_Int_t * vNodes, 
 }
 
 /**Function*************************************************************
-
   Synopsis    [Derive miter of two AIGs.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 Gia_Man_t * Acb_CreateMiter( Gia_Man_t * pF, Gia_Man_t * pG )
 {
@@ -843,15 +771,11 @@ Gia_Man_t * Acb_CreateMiter( Gia_Man_t * pF, Gia_Man_t * pG )
 }
 
 /**Function*************************************************************
-
   Synopsis    []
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 #define NWORDS 256
 
@@ -1214,15 +1138,11 @@ Vec_Int_t * Acb_FindSupport( sat_solver * pSat, int iFirstDiv, Vec_Int_t * vWeig
 }
 
 /**Function*************************************************************
-
   Synopsis    [Compute the best support of the targets.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 Vec_Int_t * Acb_DerivePatchSupport( Cnf_Dat_t * pCnf, int iTar, int nTargets, int nCoDivs, Vec_Int_t * vDivs, Acb_Ntk_t * pNtkF, Vec_Int_t * vSuppOld, int TimeOut )
 {
@@ -1487,13 +1407,11 @@ Vec_Int_t * Acb_DerivePatchSupportS( Cnf_Dat_t * pCnf, int nCiTars, int nCoDivs,
             pLits[2] = Abc_Var2Lit(iDivVar+i,                 1);
             if ( !satoko_add_clause( pSat, pLits, 3 ) )
                 assert( 0 );
-
             pLits[0] = Abc_Var2Lit(iCoVarBeg+1+i,             0);
             pLits[1] = Abc_Var2Lit(iCoVarBeg+1+i+pCnf->nVars, 1);
             pLits[2] = Abc_Var2Lit(iDivVar+i,                 1);
             if ( !satoko_add_clause( pSat, pLits, 3 ) )
                 assert( 0 );
-
             Vec_IntPush( vSupp, Abc_Var2Lit(iDivVar+i, 0) );
 */
         }
@@ -1549,15 +1467,11 @@ Vec_Int_t * Acb_DerivePatchSupportS( Cnf_Dat_t * pCnf, int nCiTars, int nCoDivs,
 
 
 /**Function*************************************************************
-
   Synopsis    [Compute functions of the targets.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 char * Acb_EnumerateSatAssigns( sat_solver * pSat, int PivotVar, int FreeVar, Vec_Int_t * vDivVars, Vec_Int_t * vTempLits, Vec_Str_t * vTempSop )
 {
@@ -1812,15 +1726,11 @@ int Acb_CheckMiter( Cnf_Dat_t * pCnf )
 
 
 /**Function*************************************************************
-
   Synopsis    [Update miter by substituting the last target by a given function.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 void Acb_CollectIntNodes_rec( Gia_Man_t * p, Gia_Obj_t * pObj, Vec_Int_t * vNodes )
 {
@@ -1906,15 +1816,11 @@ Gia_Man_t * Acb_UpdateMiter( Gia_Man_t * pM, Gia_Man_t * pOne, int iTar, int nTa
 }
 
 /**Function*************************************************************
-
   Synopsis    [Generate strings representing instance and the patch.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 Vec_Str_t * Acb_GenerateInstance( Acb_Ntk_t * p, Vec_Int_t * vDivs, Vec_Int_t * vUsed, Vec_Int_t * vTars )
 {
@@ -2084,15 +1990,11 @@ Vec_Str_t * Acb_GeneratePatch( Acb_Ntk_t * p, Vec_Int_t * vDivs, Vec_Int_t * vUs
 }
 
 /**Function*************************************************************
-
   Synopsis    [Patch generation.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 Vec_Str_t * Acb_GenerateInstance2( Vec_Ptr_t * vIns, Vec_Ptr_t * vOuts )
 {
@@ -2220,15 +2122,11 @@ void Acb_GenerateFile2( Gia_Man_t * pGia, Vec_Ptr_t * vIns, Vec_Ptr_t * vOuts, c
 }
 
 /**Function*************************************************************
-
   Synopsis    [Produce output files.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 void Acb_GenerateFilePatch( Vec_Str_t * p, char * pFileNamePatch )
 {
@@ -2260,15 +2158,11 @@ void Acb_GenerateFileOut( Vec_Str_t * vPatchLine, char * pFileNameF, char * pFil
 }
 
 /**Function*************************************************************
-
   Synopsis    [Print parameters of the patch.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 void Acb_PrintPatch( Acb_Ntk_t * pNtkF, Vec_Int_t * vDivs, Vec_Int_t * vUsed, abctime clk )
 {
@@ -2285,15 +2179,11 @@ void Acb_PrintPatch( Acb_Ntk_t * pNtkF, Vec_Int_t * vDivs, Vec_Int_t * vUsed, ab
 }
 
 /**Function*************************************************************
-
   Synopsis    [Quantifies targets 0 up to iTar (out of nTars).]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 Gia_Man_t * Acb_NtkEcoSynthesize( Gia_Man_t * p )
 {
@@ -2510,15 +2400,11 @@ Gia_Man_t * Acb_NtkDeriveMiterCnfInter( Gia_Man_t * p, int iTar, int nTars )
 }
 
 /**Function*************************************************************
-
   Synopsis    [Transform patch functions to have common support.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 char * Acb_RemapOneFunction( char * pStr, Vec_Int_t * vSupp, Vec_Int_t * vMap, int nVars )
 {
@@ -2593,15 +2479,11 @@ Vec_Ptr_t * Acb_TransformPatchFunctions( Vec_Ptr_t * vSops, Vec_Wec_t * vSupps, 
 }
 
 /**Function*************************************************************
-
   Synopsis    [Performs ECO for two networks.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 int Acb_NtkEcoPerform( Acb_Ntk_t * pNtkF, Acb_Ntk_t * pNtkG, char * pFileName[4], int nTimeout, int fCisOnly, int fInputs, int fCheck, int fVerbose, int fVeryVerbose )
 {
@@ -2825,15 +2707,11 @@ cleanup:
 }
 
 /**Function*************************************************************
-
   Synopsis    [Read/write test.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 void Acb_NtkTestRun2( char * pFileNames[3], int fVerbose )
 {
@@ -2845,20 +2723,16 @@ void Acb_NtkTestRun2( char * pFileNames[3], int fVerbose )
 }
 
 /**Function*************************************************************
-
   Synopsis    [Top level procedure.]
-
   Description []
                
   SideEffects []
-
   SeeAlso     []
-
 ***********************************************************************/
 void Acb_NtkRunEco( char * pFileNames[4], int nTimeout, int fCheck, int fRandom, int fInputs, int fVerbose, int fVeryVerbose )
 {
     char Command[1000]; int Result = 1;
-    Acb_Ntk_t * pNtkF = Acb_VerilogSimpleRead( pFileNames[0], "aa" );
+    Acb_Ntk_t * pNtkF = Acb_VerilogSimpleRead( pFileNames[0], pFileNames[2] );
     Acb_Ntk_t * pNtkG = Acb_VerilogSimpleRead( pFileNames[1], NULL );
     if ( !pNtkF || !pNtkG )
         return;
@@ -2903,4 +2777,3 @@ void Acb_NtkRunEco( char * pFileNames[4], int nTimeout, int fCheck, int fRandom,
 
 
 ABC_NAMESPACE_IMPL_END
-

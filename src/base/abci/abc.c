@@ -7067,14 +7067,25 @@ usage:
 ***********************************************************************/
 int Abc_CommandRunEco( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
-    extern void Acb_NtkRunEco( char * pFileNames[4], int fCheck, int fRandom, int fInputs, int fVerbose, int fVeryVerbose );
+    extern void Acb_NtkRunEco( char * pFileNames[4], int nTimeout, int fCheck, int fRandom, int fInputs, int fVerbose, int fVeryVerbose );
     char * pFileNames[4] = {NULL};
-    int c, fCheck = 0, fRandom = 0, fInputs = 0, fVerbose = 0, fVeryVerbose = 0;
+    int c, nTimeout = 0, fCheck = 0, fRandom = 0, fInputs = 0, fVerbose = 0, fVeryVerbose = 0;
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "crivwh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "Tcrivwh" ) ) != EOF )
     {
         switch ( c )
         {
+        case 'T':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-T\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            nTimeout = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( nTimeout < 0 )
+                goto usage;
+            break;
         case 'c':
             fCheck ^= 1;
             break;
@@ -7115,11 +7126,11 @@ int Abc_CommandRunEco( Abc_Frame_t * pAbc, int argc, char ** argv )
             fclose( pFile );
         pFileNames[c] = argv[globalUtilOptind+c];
     }
-    Acb_NtkRunEco( pFileNames, fCheck, fRandom, fInputs, fVerbose, fVeryVerbose );
+    Acb_NtkRunEco( pFileNames, nTimeout, fCheck, fRandom, fInputs, fVerbose, fVeryVerbose );
     return 0;
 
 usage:
-    Abc_Print( -2, "usage: runeco [-crivwh] <implementation> <specification> <weights>\n" );
+    Abc_Print( -2, "usage: runeco [-T num] [-crivwh] <implementation> <specification> <weights>\n" );
     Abc_Print( -2, "\t         performs computation of patch functions during ECO,\n" );
     Abc_Print( -2, "\t         as described in the following paper: A. Q. Dao et al\n" );
     Abc_Print( -2, "\t         \"Efficient computation of ECO patch functions\", Proc. DAC\'18\n" );
@@ -7127,6 +7138,7 @@ usage:
     Abc_Print( -2, "\t         (currently only applicable to benchmarks from 2017 ICCAD CAD competition\n" );
     Abc_Print( -2, "\t         http://cad-contest-2017.el.cycu.edu.tw/Problem_A/default.html as follows:\n" );
     Abc_Print( -2, "\t         \"runeco unit1/F.v unit1/G.v unit1/weight.txt; cec -n out.v unit1/G.v\")\n" );
+    Abc_Print( -2, "\t-T num : the timeout in seconds [default = %d]\n", nTimeout );
     Abc_Print( -2, "\t-c     : toggle checking that the problem has a solution [default = %s]\n", fCheck? "yes": "no" );
     Abc_Print( -2, "\t-r     : toggle using random permutation of support variables [default = %s]\n", fRandom? "yes": "no" );
     Abc_Print( -2, "\t-i     : toggle using primary inputs as support variables [default = %s]\n", fInputs? "yes": "no" );
@@ -7198,14 +7210,25 @@ usage:
 ***********************************************************************/
 int Abc_CommandRunSim( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
-    extern void Acb_NtkRunSim( char * pFileName[4], int nWords, int nBeam, int LevL, int LevU, int fOrder, int fFancy, int fUseBuf, int fRandom, int fUseWeights, int fInputs, int fSkipMffc, int fVerbose, int fVeryVerbose );
+    extern void Acb_NtkRunSim( char * pFileName[4], int nTimeout, int nWords, int nBeam, int LevL, int LevU, int fOrder, int fFancy, int fUseBuf, int fRandom, int fUseWeights, int fInputs, int fSkipMffc, int fVerbose, int fVeryVerbose );
     char * pFileNames[4] = {NULL, NULL, "out.v", NULL};
-    int c, nWords = 8, nBeam = 4, LevL = -1, LevU = -1, fOrder = 0, fFancy = 0, fUseBuf = 0, fRandom = 0, fUseWeights = 0, fInputs = 0, fSkipMffc = 0, fVerbose = 0, fVeryVerbose = 0;
+    int c, nTimeout = 0, nWords = 8, nBeam = 4, LevL = -1, LevU = -1, fOrder = 0, fFancy = 0, fUseBuf = 0, fRandom = 0, fUseWeights = 0, fInputs = 0, fSkipMffc = 0, fVerbose = 0, fVeryVerbose = 0;
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "WBLUofbruimvwh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "TWBLUofbruimvwh" ) ) != EOF )
     {
         switch ( c )
         {
+        case 'T':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-T\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            nTimeout = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( nTimeout < 0 )
+                goto usage;
+            break;
         case 'W':
             if ( globalUtilOptind >= argc )
             {
@@ -7302,12 +7325,13 @@ int Abc_CommandRunSim( Abc_Frame_t * pAbc, int argc, char ** argv )
         else
             fclose( pFile );
     }
-    Acb_NtkRunSim( pFileNames, nWords, nBeam, LevL, LevU, fOrder, fFancy, fUseBuf, fRandom, fUseWeights, fInputs, fSkipMffc, fVerbose, fVeryVerbose );
+    Acb_NtkRunSim( pFileNames, nTimeout, nWords, nBeam, LevL, LevU, fOrder, fFancy, fUseBuf, fRandom, fUseWeights, fInputs, fSkipMffc, fVerbose, fVeryVerbose );
     return 0;
 
 usage:
-    Abc_Print( -2, "usage: runsim [-WBLU] [-ofbruimvwh] [-N <num>] <file1> <file2> <file3>\n" );
+    Abc_Print( -2, "usage: runsim [-TWBLU] [-ofbruimvwh] [-N <num>] <file1> <file2> <file3>\n" );
     Abc_Print( -2, "\t           experimental simulation command\n" );
+    Abc_Print( -2, "\t-T <num> : the timeout in seconds [default = %d]\n", nTimeout );
     Abc_Print( -2, "\t-W <num> : the number of words of simulation info [default = %d]\n", nWords );
     Abc_Print( -2, "\t-B <num> : the beam width parameter [default = %d]\n", nBeam );
     Abc_Print( -2, "\t-L <num> : the lower bound on level [default = %d]\n", LevL );
@@ -23657,12 +23681,24 @@ int Abc_CommandPermute( Abc_Frame_t * pAbc, int argc, char ** argv )
     int fFlops = 1;
     int fNodes = 1;
     int fFanout = 0;
+    int Seed = -1;
     int c;
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "Fiofnxh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "SFiofnxh" ) ) != EOF )
     {
         switch ( c )
         {
+        case 'S':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-S\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            Seed = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( Seed < 0 )
+                goto usage;
+            break;
         case 'F':
             if ( globalUtilOptind >= argc )
             {
@@ -23694,6 +23730,8 @@ int Abc_CommandPermute( Abc_Frame_t * pAbc, int argc, char ** argv )
             goto usage;
         }
     }
+    if ( Seed >= 0 )
+        srand( (unsigned)Seed );
     if ( pNtk == NULL )
     {
         Abc_Print( -1, "Empty network.\n" );
@@ -23728,8 +23766,9 @@ int Abc_CommandPermute( Abc_Frame_t * pAbc, int argc, char ** argv )
     return 0;
 
 usage:
-    Abc_Print( -2, "usage: permute [-iofnxh] [-F filename]\n" );
+    Abc_Print( -2, "usage: permute [-S num] [-iofnxh] [-F filename]\n" );
     Abc_Print( -2, "\t                performs random permutation of inputs/outputs/flops\n" );
+    Abc_Print( -2, "\t-S num        : the random seed to generate permutations (0 <= num < INT_MAX) [default = %d]\n", Seed );
     Abc_Print( -2, "\t-i            : toggle permuting primary inputs [default = %s]\n", fInputs? "yes": "no" );
     Abc_Print( -2, "\t-o            : toggle permuting primary outputs [default = %s]\n", fOutputs? "yes": "no" );
     Abc_Print( -2, "\t-f            : toggle permuting flip-flops [default = %s]\n", fFlops? "yes": "no" );
@@ -36096,13 +36135,24 @@ int Abc_CommandAbc9Sat( Abc_Frame_t * pAbc, int argc, char ** argv )
     Cec_ParSat_t ParsSat, * pPars = &ParsSat;
     Gia_Man_t * pTemp;
     int c;
-    int fNewSolver = 0, fCSat = 0;
+    int fNewSolver = 0, fCSat = 0, f0Proved = 0;
     Cec_ManSatSetDefaultParams( pPars );
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "CSNanmtcxvh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "JCSNanmtcxzvh" ) ) != EOF )
     {
         switch ( c )
         {
+        case 'J':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-J\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            pPars->SolverType = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( pPars->SolverType < 0 )
+                goto usage;
+            break;
         case 'C':
             if ( globalUtilOptind >= argc )
             {
@@ -36154,6 +36204,9 @@ int Abc_CommandAbc9Sat( Abc_Frame_t * pAbc, int argc, char ** argv )
         case 'x':
             fNewSolver ^= 1;
             break;
+        case 'z':
+            f0Proved ^= 1;
+            break;
         case 'v':
             pPars->fVerbose ^= 1;
             break;
@@ -36175,7 +36228,7 @@ int Abc_CommandAbc9Sat( Abc_Frame_t * pAbc, int argc, char ** argv )
         else if ( pPars->fLearnCls )
             vCounters = Tas_ManSolveMiterNc( pAbc->pGia, pPars->nBTLimit, &vStatus, pPars->fVerbose );
         else if ( pPars->fNonChrono )
-            vCounters = Cbs_ManSolveMiterNc( pAbc->pGia, pPars->nBTLimit, &vStatus, pPars->fVerbose );
+            vCounters = Cbs_ManSolveMiterNc( pAbc->pGia, pPars->nBTLimit, &vStatus, f0Proved, pPars->fVerbose );
         else
             vCounters = Cbs_ManSolveMiter( pAbc->pGia, pPars->nBTLimit, &vStatus, pPars->fVerbose );
         Vec_IntFree( vCounters );
@@ -36183,7 +36236,7 @@ int Abc_CommandAbc9Sat( Abc_Frame_t * pAbc, int argc, char ** argv )
     }
     else
     {
-        pTemp = Cec_ManSatSolving( pAbc->pGia, pPars );
+        pTemp = Cec_ManSatSolving( pAbc->pGia, pPars, f0Proved );
         Abc_FrameUpdateGia( pAbc, pTemp );
     }
     if ( pAbc->pGia->vSeqModelVec )
@@ -36195,8 +36248,9 @@ int Abc_CommandAbc9Sat( Abc_Frame_t * pAbc, int argc, char ** argv )
     return 0;
 
 usage:
-    Abc_Print( -2, "usage: &sat [-CSN <num>] [-anmctxvh]\n" );
+    Abc_Print( -2, "usage: &sat [-JCSN <num>] [-anmctxzvh]\n" );
     Abc_Print( -2, "\t         performs SAT solving for the combinational outputs\n" );
+    Abc_Print( -2, "\t-J num : the SAT solver type [default = %d]\n", pPars->SolverType );
     Abc_Print( -2, "\t-C num : the max number of conflicts at a node [default = %d]\n", pPars->nBTLimit );
     Abc_Print( -2, "\t-S num : the min number of variables to recycle the solver [default = %d]\n", pPars->nSatVarMax );
     Abc_Print( -2, "\t-N num : the min number of calls to recycle the solver [default = %d]\n", pPars->nCallsRecycle );
@@ -36206,6 +36260,7 @@ usage:
     Abc_Print( -2, "\t-c     : toggle using circuit-based SAT solver [default = %s]\n", fCSat? "yes": "no" );
     Abc_Print( -2, "\t-t     : toggle using learning in curcuit-based solver [default = %s]\n", pPars->fLearnCls? "yes": "no" );
     Abc_Print( -2, "\t-x     : toggle using new solver [default = %s]\n", fNewSolver? "yes": "no" );
+    Abc_Print( -2, "\t-z     : toggle replacing proved cones by const0 [default = %s]\n", f0Proved? "yes": "no" );
     Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", pPars->fVerbose? "yes": "no" );
     Abc_Print( -2, "\t-h     : print the command usage\n");
     return 1;
@@ -36578,8 +36633,9 @@ int Abc_CommandAbc9Srm( Abc_Frame_t * pAbc, int argc, char ** argv )
     int fSpeculate = 1;
     int fSkipSome = 0;
     int fDualOut = 0;
+    int fComb = 0;
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "Adrsfvh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "Adrsfcvh" ) ) != EOF )
     {
         switch ( c )
         {
@@ -36604,6 +36660,9 @@ int Abc_CommandAbc9Srm( Abc_Frame_t * pAbc, int argc, char ** argv )
         case 'f':
             fSkipSome ^= 1;
             break;
+        case 'c':
+            fComb ^= 1;
+            break;
         case 'v':
             fVerbose ^= 1;
             break;
@@ -36617,6 +36676,16 @@ int Abc_CommandAbc9Srm( Abc_Frame_t * pAbc, int argc, char ** argv )
     {
         Abc_Print( -1, "Abc_CommandAbc9Srm(): There is no AIG.\n" );
         return 1;
+    }
+    if ( fComb )
+    {
+        extern int Cec4_ManSimulateOnlyTest( Gia_Man_t * p, int fVerbose );
+        int Result = Cec4_ManSimulateOnlyTest( pAbc->pGia, fVerbose );
+        extern Gia_Man_t * Gia_ManCombSpecReduce( Gia_Man_t * p );
+        pTemp = Gia_ManCombSpecReduce( pAbc->pGia );
+        Abc_FrameUpdateGia( pAbc, pTemp );
+        Result = 0;
+        return 0;
     }
     sprintf(pFileName,  "gsrm%s.aig", fSpeculate? "" : "s" );
     sprintf(pFileName2, "gsyn%s.aig", fSpeculate? "" : "s" );
@@ -36650,13 +36719,14 @@ int Abc_CommandAbc9Srm( Abc_Frame_t * pAbc, int argc, char ** argv )
     return 0;
 
 usage:
-    Abc_Print( -2, "usage: &srm [-A file] [-drsfvh]\n" );
-    Abc_Print( -2, "\t          writes speculatively reduced model into file \"%s\"\n", pFileName );
+    Abc_Print( -2, "usage: &srm [-A file] [-drsfcvh]\n" );
+    Abc_Print( -2, "\t          derives or writes speculatively reduced model into file \"%s\"\n", pFileName );
     Abc_Print( -2, "\t-A file : file name for dumping speculative-reduced model [default = \"gsrm.aig\"]\n" );
     Abc_Print( -2, "\t-d      : toggle creating dual-output miter [default = %s]\n", fDualOut? "yes": "no" );
     Abc_Print( -2, "\t-r      : toggle writing reduced network for synthesis [default = %s]\n", fSynthesis? "yes": "no" );
     Abc_Print( -2, "\t-s      : toggle using speculation at the internal nodes [default = %s]\n", fSpeculate? "yes": "no" );
     Abc_Print( -2, "\t-f      : toggle filtering to remove redundant equivalences [default = %s]\n", fSkipSome? "yes": "no" );
+    Abc_Print( -2, "\t-c      : toggle using combinational speculation [default = %s]\n", fComb? "yes": "no" );
     Abc_Print( -2, "\t-v      : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );
     Abc_Print( -2, "\t-h      : print the command usage\n");
     return 1;

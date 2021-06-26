@@ -242,8 +242,10 @@ int Acb_WireIsTarget( int Token, Abc_Nam_t * pNames )
     char * pStr = Abc_NamStr(pNames, Token);
     return pStr[0] == 't' && pStr[1] == '_';
 }
-void * Acb_VerilogSimpleParse( Vec_Int_t * vBuffer, Abc_Nam_t * pNames )
+void * Acb_VerilogSimpleParse( Vec_Int_t * vBuffer, Abc_Nam_t * pNames, char weightstr[], char * pFileNameW )
 {
+    //char weightstr[80];
+    if(pFileNameW) strcpy(weightstr," ");
     Ndr_Data_t * pDesign = NULL;
     Vec_Int_t * vInputs  = Vec_IntAlloc(100);
     Vec_Int_t * vOutputs = Vec_IntAlloc(100);
@@ -281,8 +283,15 @@ void * Acb_VerilogSimpleParse( Vec_Int_t * vBuffer, Abc_Nam_t * pNames )
     ModuleID = Ndr_AddModule( pDesign, Vec_IntEntry(vBuffer, 1) );
     // create inputs
     Ndr_DataResize( pDesign, Vec_IntSize(vInputs) );
-    Vec_IntForEachEntry( vInputs, Token, i )
+    Vec_IntForEachEntry( vInputs, Token, i ){
+        if(pFileNameW){
+            char * pStr = Abc_NamStr(pNames, Token);
+            strcat(weightstr, pStr);
+            strcat(weightstr, " 1 ");
+        }
         Ndr_DataPush( pDesign, NDR_INPUT, Token );
+    }
+    //printf("%s ",weightstr);
     Ndr_DataAddTo( pDesign, ModuleID-256, Vec_IntSize(vInputs) );
     Ndr_DataAddTo( pDesign, 0, Vec_IntSize(vInputs) );
     // create outputs
@@ -296,6 +305,13 @@ void * Acb_VerilogSimpleParse( Vec_Int_t * vBuffer, Abc_Nam_t * pNames )
     Vec_IntForEachEntry( vWires, Token, i )
         if ( Acb_WireIsTarget(Token, pNames) )
             Ndr_DataPush( pDesign, NDR_TARGET, Token ), Count++;
+        else{
+            if(pFileNameW){
+                char * pStr2 = Abc_NamStr(pNames, Token);
+                strcat(weightstr, pStr2);
+                strcat(weightstr, " 1 ");
+            }
+        }
     Ndr_DataAddTo( pDesign, ModuleID-256, Count );
     Ndr_DataAddTo( pDesign, 0, Count );
     // create nodes
@@ -340,7 +356,8 @@ void * Acb_VerilogSimpleParse( Vec_Int_t * vBuffer, Abc_Nam_t * pNames )
 Vec_Int_t * Acb_ReadWeightMap( char * pFileName, Abc_Nam_t * pNames )
 {
     Vec_Int_t * vWeights = Vec_IntStartFull( Abc_NamObjNumMax(pNames) );
-    char * pBuffer = Extra_FileReadContents( pFileName );
+    //char * pBuffer = Extra_FileReadContents( pFileName );
+    char *pBuffer = pFileName;
     char * pToken, * pNum;
     if ( pBuffer == NULL )
         return NULL;
@@ -359,7 +376,7 @@ Vec_Int_t * Acb_ReadWeightMap( char * pFileName, Abc_Nam_t * pNames )
         pToken = strtok( NULL, "  \n\r(),;" );
         pNum = strtok( NULL, "  \n\r(),;" );
     }
-    ABC_FREE( pBuffer );
+    //ABC_FREE( pBuffer );
     return vWeights;
 }
 
@@ -380,8 +397,11 @@ Acb_Ntk_t * Acb_VerilogSimpleRead( char * pFileName, char * pFileNameW )
     Acb_Ntk_t * pNtk;
     Abc_Nam_t * pNames = Acb_VerilogStartNames();
     Vec_Int_t * vBuffer = Acb_VerilogSimpleLex( pFileName, pNames );
-    void * pModule = vBuffer ? Acb_VerilogSimpleParse( vBuffer, pNames ) : NULL;
-    Vec_Int_t * vWeights = pFileNameW ? Acb_ReadWeightMap( pFileNameW, pNames ) : NULL;
+    char weightstr[80];
+    void * pModule = vBuffer ? Acb_VerilogSimpleParse( vBuffer, pNames, weightstr, pFileNameW ) : NULL;
+    //if(pFileNameW) printf("%s ",weightstr);
+    //Vec_Int_t * vWeights = pFileNameW ? Acb_ReadWeightMap( pFileNameW, pNames ) : NULL;
+    Vec_Int_t * vWeights = pFileNameW ? Acb_ReadWeightMap( weightstr, pNames ) : NULL;
     if ( pFileName && pModule == NULL )
     {
         printf( "Cannot read input file \"%s\".\n", pFileName );
@@ -2583,10 +2603,11 @@ Vec_Ptr_t * Acb_TransformPatchFunctions( Vec_Ptr_t * vSops, Vec_Wec_t * vSupps, 
   SeeAlso     []
 
 ***********************************************************************/
-int Acb_NtkEcoPerform( Acb_Ntk_t * pNtkF, Acb_Ntk_t * pNtkG, char * pFileName[4], int fCisOnly, int fInputs, int fCheck, int fVerbose, int fVeryVerbose )
+int Acb_NtkEcoPerform( Acb_Ntk_t * pNtkF, Acb_Ntk_t * pNtkG, char * pFileName[4], int nTimeout, int fCisOnly, int fInputs, int fCheck, int fVerbose, int fVeryVerbose )
 {
     extern Gia_Man_t * Abc_SopSynthesizeOne( char * pSop, int fClp );
 
+    abctime clkStart  = Abc_Clock();
     abctime clk  = Abc_Clock();
     int nTargets = Vec_IntSize(&pNtkF->vTargets);
     int TimeOut  = fCisOnly ? 0 : 120;  // 60 seconds
@@ -2697,6 +2718,14 @@ int Acb_NtkEcoPerform( Acb_Ntk_t * pNtkF, Acb_Ntk_t * pNtkG, char * pFileName[4]
             Cnf_DataFree( pCnf );
             if ( pSop == NULL )
             {
+                RetValue = 0;
+                goto cleanup;
+            }
+            if ( nTimeout && (Abc_Clock() - clkStart)/CLOCKS_PER_SEC >= nTimeout ) 
+            {
+                Vec_IntFreeP( &vSupp );
+                ABC_FREE( pSop );
+                printf( "The target computation timed out after %d seconds.\n", nTimeout );
                 RetValue = 0;
                 goto cleanup;
             }
@@ -2826,10 +2855,10 @@ void Acb_NtkTestRun2( char * pFileNames[3], int fVerbose )
   SeeAlso     []
 
 ***********************************************************************/
-void Acb_NtkRunEco( char * pFileNames[4], int fCheck, int fRandom, int fInputs, int fVerbose, int fVeryVerbose )
+void Acb_NtkRunEco( char * pFileNames[4], int nTimeout, int fCheck, int fRandom, int fInputs, int fVerbose, int fVeryVerbose )
 {
     char Command[1000]; int Result = 1;
-    Acb_Ntk_t * pNtkF = Acb_VerilogSimpleRead( pFileNames[0], pFileNames[2] );
+    Acb_Ntk_t * pNtkF = Acb_VerilogSimpleRead( pFileNames[0], "aa" );
     Acb_Ntk_t * pNtkG = Acb_VerilogSimpleRead( pFileNames[1], NULL );
     if ( !pNtkF || !pNtkG )
         return;
@@ -2848,10 +2877,10 @@ void Acb_NtkRunEco( char * pFileNames[4], int fCheck, int fRandom, int fInputs, 
 
     Acb_IntallLibrary( Abc_FrameReadSignalNames() != NULL );
 
-    if ( !Acb_NtkEcoPerform( pNtkF, pNtkG, pFileNames, 0, fInputs, fCheck, fVerbose, fVeryVerbose ) )
+    if ( !Acb_NtkEcoPerform( pNtkF, pNtkG, pFileNames, nTimeout, 0, fInputs, fCheck, fVerbose, fVeryVerbose ) )
     {
 //        printf( "General computation timed out. Trying inputs only.\n\n" );
-//        if ( !Acb_NtkEcoPerform( pNtkF, pNtkG, pFileNames, 1, fInputs, fCheck, fVerbose, fVeryVerbose ) )
+//        if ( !Acb_NtkEcoPerform( pNtkF, pNtkG, pFileNames, nTimeout, 1, fInputs, fCheck, fVerbose, fVeryVerbose ) )
 //            printf( "Input-only computation also timed out.\n\n" );
         printf( "Computation did not succeed.\n" );
         Result = 0;

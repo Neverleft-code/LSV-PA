@@ -87,9 +87,10 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
           fclose( pFile );
       pFileNames[c] = argv[globalUtilOptind+c];
       //to do
+      FILE * nFile = fopen( "wirename", "w" );
+      //fwrite( wire1 /n wire2 /n ..... ,nFile)
+      fclose( nFile );
 
-
-      
   }
   return 0;
 }

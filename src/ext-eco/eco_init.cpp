@@ -53,7 +53,7 @@ static int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv);
 
 
 void init(Abc_Frame_t* pAbc) {
-  Cmd_CommandAdd(pAbc, "eco", "eco", Abc_CommandRunEco_test, 0);
+  Cmd_CommandAdd(pAbc, "Synthesis", "eco_modify_verilog", Abc_CommandRunEco_test, 0);
 }
 
 void destroy(Abc_Frame_t* pAbc) {}
@@ -73,7 +73,7 @@ extern "C"
 
 
 int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
-  printf("ecoooooo");
+  //printf("ecoooooo");
   char * pFileNames[4] = {NULL};
   int c, nTimeout = 0, fCheck = 0, fRandom = 0, fInputs = 0, fVerbose = 0, fVeryVerbose = 0;
   Extra_UtilGetoptReset();

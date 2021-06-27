@@ -65,58 +65,15 @@ struct PackageRegistrationManager {
   PackageRegistrationManager() { Abc_FrameAddInitializer(&frame_initializer); }
 } lsvPackageRegistrationManager;
 
-extern "C"
-{
-    void Acb_NtkRunEco( char * pFileNames[4], int nTimeout, int fCheck, int fRandom, int fInputs, int fVerbose, int fVeryVerbose );
-}
-
-
 
 int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
-  //printf("ecoooooo");
   char * pFileNames[4] = {NULL};
-  int c, nTimeout = 0, fCheck = 0, fRandom = 0, fInputs = 0, fVerbose = 0, fVeryVerbose = 0;
+  int c;
   Extra_UtilGetoptReset();
-  while ( ( c = Extra_UtilGetopt( argc, argv, "Tcrivwh" ) ) != EOF )
-  {
-      switch ( c )
-      {
-      case 'T':
-          if ( globalUtilOptind >= argc )
-          {
-              Abc_Print( -1, "Command line switch \"-T\" should be followed by an integer.\n" );
-              goto usage;
-          }
-          nTimeout = atoi(argv[globalUtilOptind]);
-          globalUtilOptind++;
-          if ( nTimeout < 0 )
-              goto usage;
-          break;
-      case 'c':
-          fCheck ^= 1;
-          break;
-      case 'r':
-          fRandom ^= 1;
-          break;
-      case 'i':
-          fInputs ^= 1;
-          break;
-      case 'v':
-          fVerbose ^= 1;
-          break;
-      case 'w':
-          fVeryVerbose ^= 1;
-          break;
-      case 'h':
-          goto usage;
-      default:
-          goto usage;
-      }
-  }
+
   if ( argc - globalUtilOptind < 2 || argc - globalUtilOptind > 3 )
   {
       Abc_Print( 1, "Expecting three file names on the command line.\n" );
-      goto usage;
   }
   for ( c = 0; c < argc - globalUtilOptind; c++ )
   {
@@ -129,24 +86,10 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
       else
           fclose( pFile );
       pFileNames[c] = argv[globalUtilOptind+c];
+      //to do
+
+
+      
   }
-  Acb_NtkRunEco( pFileNames, nTimeout, fCheck, fRandom, fInputs, fVerbose, fVeryVerbose );
   return 0;
-usage:
-  Abc_Print( -2, "usage: runeco [-T num] [-crivwh] <implementation> <specification> <weights>\n" );
-  Abc_Print( -2, "\t         performs computation of patch functions during ECO,\n" );
-  Abc_Print( -2, "\t         as described in the following paper: A. Q. Dao et al\n" );
-  Abc_Print( -2, "\t         \"Efficient computation of ECO patch functions\", Proc. DAC\'18\n" );
-  Abc_Print( -2, "\t         https://people.eecs.berkeley.edu/~alanmi/publications/2018/dac18_eco.pdf\n" );
-  Abc_Print( -2, "\t         (currently only applicable to benchmarks from 2017 ICCAD CAD competition\n" );
-  Abc_Print( -2, "\t         http://cad-contest-2017.el.cycu.edu.tw/Problem_A/default.html as follows:\n" );
-  Abc_Print( -2, "\t         \"runeco unit1/F.v unit1/G.v unit1/weight.txt; cec -n out.v unit1/G.v\")\n" );
-  Abc_Print( -2, "\t-T num : the timeout in seconds [default = %d]\n", nTimeout );
-  Abc_Print( -2, "\t-c     : toggle checking that the problem has a solution [default = %s]\n", fCheck? "yes": "no" );
-  Abc_Print( -2, "\t-r     : toggle using random permutation of support variables [default = %s]\n", fRandom? "yes": "no" );
-  Abc_Print( -2, "\t-i     : toggle using primary inputs as support variables [default = %s]\n", fInputs? "yes": "no" );
-  Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );
-  Abc_Print( -2, "\t-w     : toggle printing more verbose information [default = %s]\n", fVeryVerbose? "yes": "no" );
-  Abc_Print( -2, "\t-h     : print the command usage\n");
-  return 1;
 }

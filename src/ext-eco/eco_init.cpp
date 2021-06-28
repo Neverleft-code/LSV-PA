@@ -222,7 +222,7 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
                 //cout << temp << endl;
                 r2File << temp << endl;
                 for (const auto &s : wireset_tmp) {
-                  nFile  << s << endl;
+                  //nFile  << s << endl;
                   r2File << wiretype[s] << ' ' << s << ';' << endl;
                 }
               }

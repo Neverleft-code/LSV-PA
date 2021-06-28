@@ -366,8 +366,10 @@ void insertTarget(string inFName, string oFName="F.v")
                 trim(splited[i],";\n");
                 trim(splited[i],",");
                 oNames.insert(splited[i]);
+                wfout << splited[i] << " 1" << endl;
             }
             fout << line << endl;
+            
         }
         else if(line.find("input")==0)
         {
@@ -377,8 +379,10 @@ void insertTarget(string inFName, string oFName="F.v")
                 trim(splited[i],";\n");
                 trim(splited[i],",");
                 iNames.insert(splited[i]);
+                wfout << splited[i] << " 1" << endl;
             }
             fout << line << endl;
+            
         }
         else
         {
@@ -404,6 +408,7 @@ void insertTarget(string inFName, string oFName="F.v")
                         fout << "wire t_" << splited[i] << ", u_" << splited[i] << ";\n";
                         fout << "buf (" << splited[i] << ",t_" << splited[i] << ");\n";
                         splited[i] = "u_"+splited[i];
+                        wfout << splited[i] << " 1" << endl;
                     }
                     //the pin is internal wire and is target
                     else if(allTarget.find(splited[i])!=allTarget.end())
@@ -411,10 +416,12 @@ void insertTarget(string inFName, string oFName="F.v")
                         cout << "wires: " << splited[i] << endl;
                         fout << "wire u_" << splited[i] << ";\n";
                         splited[i] = "u_"+splited[i];
+                        wfout << splited[i] << " 1" << endl;
                     }
                     //the pin isn't a target
                     else
                     {
+                        wfout << splited[i] << " 1" << endl;
                         continue;
                     }
                 }
@@ -456,4 +463,5 @@ void insertTarget(string inFName, string oFName="F.v")
     }
     fin.close();
     fout.close();
+    wfout.close();
 }

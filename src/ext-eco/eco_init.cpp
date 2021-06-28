@@ -104,111 +104,142 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
           //parse wire
           string temp;
           std::set<string>    wireset_tmp;
+          bool eol = true;
           while(getline(pFile, temp))
           {
-              //cout  << temp.substr(0, 4) << endl;
-              if (temp.substr(0, 5) == "input")
+            string title = "";
+            string tempname = "";
+            string begin, end = "";
+            for (int i = 0; i < temp.size(); ++i)
+            {
+              if (eol)
               {
-                string wirename = "";
-                for (int i = 0; i < temp.size(); ++i)
-                {
-                    if (temp[i] == ' ') wirename = "";
-                    else if (temp[i] == ';' or temp[i] == ',') {
-                      wireset_tmp.insert(wirename);
-                      wiretype[wirename] = "input";
-                    }
-                    else wirename = wirename + temp[i];
+                if (temp[i] == ' ') title = "";
+                else{
+                  title = title + temp[i];
+                  if (title == "wire" or title == "input" or title == "output" or title == "and" 
+                    or title == "or" or title == "nand" or title == "nor" or title == "not" 
+                    or title == "buf" or title == "xor" or title == "xnor") eol = false;
                 }
               }
-
-              else if (temp.substr(0, 6) == "output")
+              else
               {
-                string wirename = "";
-                for (int i = 0; i < temp.size(); ++i)
-                {
-                    if (temp[i] == ' ') wirename = "";
-                    else if (temp[i] == ';' or temp[i] == ','){
-                      wireset_tmp.insert(wirename);
-                      wiretype[wirename] = "output";
+                if (title == "wire" or title == "input" or title == "output"){
+                  if (temp[i] == '[' or temp[i] == ' ') ;
+                  else if (temp[i] == ':') {
+                    begin = tempname;
+                    tempname = "";
+                  }
+                  else if (temp[i] == ']') {
+                    end = tempname;
+                    tempname = "";
+                  }
+                  else if (temp[i] == ';' or temp[i] == ',') {
+                    if (begin != "" and end != "") {
+                      for (int i = stoi(begin); i < stoi(end)+1; ++i) {
+                        wireset_tmp.insert(tempname + "[" + to_string(i) + "]");
+                        wiretype[tempname + "[" + to_string(i) + "]"] = title;
+                        tempname = "";
+                      }
                     }
-                    else wirename = wirename + temp[i];
+                    else{
+                      wireset_tmp.insert(tempname);
+                      wiretype[tempname] = title;
+                      tempname = "";
+                    }
+                  }
+                  else tempname = tempname + temp[i];
+                }
+                else
+                {
+                  if (temp[i] == ' ') ;
+                  else if (temp[i] == '(') {
+                    gatelist.push_back(title);
+                    gatelist.push_back(tempname);
+                    tempname = "";
+                  }
+                  else if (temp[i] == ')' or temp[i] == ','){
+                    if (wiretype[tempname] == "" and tempname != "1'b1" and tempname != "1'b0" and tempname != "")
+                    {
+                      wireset_tmp.insert(tempname);
+                      wiretype[tempname] = "wire";
+                    }
+                    tempname = "";
+                  }
+                  else tempname = tempname + temp[i];
+                }
+
+                if (temp[i] == ';') {
+                  tempname = "";
+                  begin = "";
+                  end = "";
+                  eol = true;
                 }
               }
-
-              else if (temp.substr(0, 4) == "wire")
-              {
-                  string wirename = "";
-                  for (int i = 0; i < temp.size(); ++i)
-                  {
-                      if (temp[i] == ' ') wirename = "";
-                      else if (temp[i] == ';' or temp[i] == ',') {
-                        wireset_tmp.insert(wirename);
-                        wiretype[wirename] = "wire";
-                      }
-                      else wirename = wirename + temp[i];
-                  }
-              }
-              else if (temp.substr(0, 6) != "module" and temp.substr(0, 9) != "endmodule")
-              {
-                  int gatename = 0;
-                  string tempname = "";
-                  for (int i = 0; i < temp.size(); ++i)
-                  {
-                      if (temp[i] == ' ') {
-                        gatename = i;
-                        tempname = "";
-                      }
-                      else if (temp[i] == '(') {
-                        gatelist.push_back(temp.substr(0, gatename));
-                        gatelist.push_back(tempname);
-                        tempname = "";
-                      }
-                      else if (temp[i] == ')' or temp[i] == ','){
-                        wireset_tmp.insert(tempname);
-                        if (wiretype[tempname] == "")
-                        {
-                          wiretype[tempname] = "wire";
-                        }
-                        tempname = "";
-                      }
-                      else tempname = tempname + temp[i];
-                  }
-              }
+            }
           }
           pFile.close();
-
+///////////////////////////////////////write verilog file///////////////////////////////////////////////////
           ifstream pFile(argv[c+1], ios::in);
+          eol = true;
+          bool check_wire = true;
+          bool check_gate = false;
           if (c == 0)
           {
-            //cout << "c==0" << endl;
+            string title = "";
+            string tempname = "";
             while(getline(pFile, temp))
             {
-              if (temp.substr(0, 6) == "module") {
-                //cout << temp << endl;
-                r1File << temp << endl;
-                for (const auto &s : wireset_tmp) {
-                  nFile  << s << endl;
-                  r1File << wiretype[s] << ' ' << s << ';' << endl;
-                }
-              }
-              else if (temp.substr(0, 4) != "wire" and temp.substr(0, 5) != "input" and temp.substr(0, 6) != "output")
+              for (int i = 0; i < temp.size(); ++i)
               {
-                string tempname = "";
-                for (int i = 0; i < temp.size(); ++i)
+                if (eol)
                 {
-                    tempname = tempname + temp[i];
-                    if (temp[i] == ' '){
-                      r1File << tempname;
-                      tempname = "";
+                  if (temp[i] == ' ' or temp[i] == ';') title = "";
+                  else{
+                    title = title + temp[i];
+                    check_gate = false;
+                    if (title == "input" or title == "output" or title == "module") {
+                        r1File << title;
+                        eol = false;
+                      }
+                    else if (title == "and" or title == "or" or title == "nand" or title == "nor" 
+                      or title == "not" or title == "buf" or title == "xor" or title == "xnor")
+                    {
+                      if (check_wire) {
+                        check_wire = false;
+                        for (const auto &s : wireset_tmp) {
+                          nFile  << s << endl;
+                          r1File << "wire" << ' ' << s << ';' << endl;
+                        }
+                      }
+                      else;
+                      r1File << title;
+                      eol = false;
                     }
-                    else if (temp[i] == ';'){
-                      r1File << tempname << "\n";
-                      tempname = "";
+                  }
+                }
+                else
+                {
+                  if (title == "module" or title == "input" or title == "output")
+                  { 
+                    r1File << temp[i];
+                    if (temp[i] == ';') r1File << endl;
+                  }
+                  else
+                  {
+                    if (temp[i] == '(') {
+                      check_gate = true;
+                      r1File << ' ';
                     }
-                    else if (temp[i] == '('){ 
-                      tempname = "";
-                      r1File << '(' << ' ';
-                    }
+                    if (check_gate) r1File << temp[i];
+                    else ;
+                    if (temp[i] == ';') r1File << endl;
+                  }
+                  if (temp[i] == ';') {
+                    tempname = "";
+                    title = "";
+                    eol = true;
+                  }
                 }
               }
             }
@@ -216,35 +247,56 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
           }
           else if (c == 1)
           {
-            //cout << "c==0" << endl;
+            string title = "";
+            string tempname = "";
             while(getline(pFile, temp))
             {
-              if (temp.substr(0, 6) == "module") {
-                //cout << temp << endl;
-                r2File << temp << endl;
-                for (const auto &s : wireset_tmp) {
-                  //nFile  << s << endl;
-                  r2File << wiretype[s] << ' ' << s << ';' << endl;
-                }
-              }
-              else if (temp.substr(0, 4) != "wire" and temp.substr(0, 5) != "input" and temp.substr(0, 6) != "output")
+              for (int i = 0; i < temp.size(); ++i)
               {
-                string tempname = "";
-                for (int i = 0; i < temp.size(); ++i)
+                if (eol)
                 {
-                    tempname = tempname + temp[i];
-                    if (temp[i] == ' '){
-                      r2File << tempname;
-                      tempname = "";
+                  if (temp[i] == ' ' or temp[i] == ';') title = "";
+                  else{
+                    title = title + temp[i];
+                    check_gate = false;
+                    if (title == "input" or title == "output" or title == "module") {
+                        r2File << title;
+                        eol = false;
+                      }
+                    else if (title == "and" or title == "or" or title == "nand" or title == "nor" 
+                      or title == "not" or title == "buf" or title == "xor" or title == "xnor")
+                    {
+                      if (check_wire) {
+                        check_wire = false;
+                        for (const auto &s : wireset_tmp) r2File << "wire" << ' ' << s << ';' << endl;
+                      }
+                      r2File << title;
+                      eol = false;
                     }
-                    else if (temp[i] == ';'){
-                      r2File << tempname << "\n";
-                      tempname = "";
+                  }
+                }
+                else
+                {
+                  if (title == "module" or title == "input" or title == "output")
+                  { 
+                    r2File << temp[i];
+                    if (temp[i] == ';') r2File << endl;
+                  }
+                  else
+                  {
+                    if (temp[i] == '(') {
+                      check_gate = true;
+                      r2File << ' ';
                     }
-                    else if (temp[i] == '('){ 
-                      tempname = "";
-                      r2File << '(' << ' ';
-                    }
+                    if (check_gate) r2File << temp[i];
+                    else ;
+                    if (temp[i] == ';') r2File << endl;
+                  }
+                  if (temp[i] == ';') {
+                    tempname = "";
+                    title = "";
+                    eol = true;
+                  }
                 }
               }
             }

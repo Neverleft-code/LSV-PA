@@ -47,6 +47,13 @@
 #include "sat/cnf/cnf.h"
 #include "sat/bsat/satSolver.h"
 #include <vector>
+#include <set>
+#include <map>
+
+#include <iostream>
+#include <fstream>
+
+using namespace std;
 
 
 static int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv);
@@ -69,28 +76,198 @@ struct PackageRegistrationManager {
 int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
   char * pFileNames[4] = {NULL};
   int c;
-  Extra_UtilGetoptReset();
+  map<string, string> wiretype;
+  std::vector<string> gatelist;
 
-  if ( argc - globalUtilOptind < 2 || argc - globalUtilOptind > 3 )
+  Extra_UtilGetoptReset();
+  //printf(argc);
+  ofstream nFile("wirename");
+  ofstream gFile("gatename");
+  ofstream r1File("F.v");
+  ofstream r2File("G.v");
+  if ( argc - 1 < 2 || argc - 1 > 3 )
   {
       Abc_Print( 1, "Expecting three file names on the command line.\n" );
   }
-  for ( c = 0; c < argc - globalUtilOptind; c++ )
+  for ( c = 0; c < argc - 1; c++ )
   {
-      FILE * pFile = fopen( argv[globalUtilOptind+c], "rb" );
-      if ( pFile == NULL )
+      ifstream pFile(argv[c+1], ios::in);
+
+      if ( !pFile )
       {
-          printf( "Cannot open input file \"%s\".\n", argv[globalUtilOptind+c] );
+          printf( "Cannot open input file \"%s\".\n", argv[c+1] );
           return 0;
       }
       else
-          fclose( pFile );
-      pFileNames[c] = argv[globalUtilOptind+c];
-      //to do
-      FILE * nFile = fopen( "wirename", "w" );
-      //fwrite( wire1 /n wire2 /n ..... ,nFile)
-      fclose( nFile );
+      {
+          //parse wire
+          string temp;
+          std::set<string>    wireset_tmp;
+          while(getline(pFile, temp))
+          {
+              //cout  << temp.substr(0, 4) << endl;
+              if (temp.substr(0, 5) == "input")
+              {
+                string wirename = "";
+                for (int i = 0; i < temp.size(); ++i)
+                {
+                    if (temp[i] == ' ') wirename = "";
+                    else if (temp[i] == ';' or temp[i] == ',') {
+                      wireset_tmp.insert(wirename);
+                      wiretype[wirename] = "input";
+                    }
+                    else wirename = wirename + temp[i];
+                }
+              }
 
+              else if (temp.substr(0, 6) == "output")
+              {
+                string wirename = "";
+                for (int i = 0; i < temp.size(); ++i)
+                {
+                    if (temp[i] == ' ') wirename = "";
+                    else if (temp[i] == ';' or temp[i] == ','){
+                      wireset_tmp.insert(wirename);
+                      wiretype[wirename] = "output";
+                    }
+                    else wirename = wirename + temp[i];
+                }
+              }
+
+              else if (temp.substr(0, 4) == "wire")
+              {
+                  string wirename = "";
+                  for (int i = 0; i < temp.size(); ++i)
+                  {
+                      if (temp[i] == ' ') wirename = "";
+                      else if (temp[i] == ';' or temp[i] == ',') {
+                        wireset_tmp.insert(wirename);
+                        wiretype[wirename] = "wire";
+                      }
+                      else wirename = wirename + temp[i];
+                  }
+              }
+              else if (temp.substr(0, 6) != "module" and temp.substr(0, 9) != "endmodule")
+              {
+                  int gatename = 0;
+                  string tempname = "";
+                  for (int i = 0; i < temp.size(); ++i)
+                  {
+                      if (temp[i] == ' ') {
+                        gatename = i;
+                        tempname = "";
+                      }
+                      else if (temp[i] == '(') {
+                        gatelist.push_back(temp.substr(0, gatename));
+                        gatelist.push_back(tempname);
+                        tempname = "";
+                      }
+                      else if (temp[i] == ')' or temp[i] == ','){
+                        wireset_tmp.insert(tempname);
+                        if (wiretype[tempname] == "")
+                        {
+                          wiretype[tempname] = "wire";
+                        }
+                        tempname = "";
+                      }
+                      else tempname = tempname + temp[i];
+                  }
+              }
+          }
+          pFile.close();
+
+          ifstream pFile(argv[c+1], ios::in);
+          if (c == 0)
+          {
+            //cout << "c==0" << endl;
+            while(getline(pFile, temp))
+            {
+              if (temp.substr(0, 6) == "module") {
+                //cout << temp << endl;
+                r1File << temp << endl;
+                for (const auto &s : wireset_tmp) {
+                  nFile  << s << endl;
+                  r1File << wiretype[s] << ' ' << s << ';' << endl;
+                }
+              }
+              else if (temp.substr(0, 4) != "wire" and temp.substr(0, 5) != "input" and temp.substr(0, 6) != "output")
+              {
+                string tempname = "";
+                for (int i = 0; i < temp.size(); ++i)
+                {
+                    tempname = tempname + temp[i];
+                    if (temp[i] == ' '){
+                      r1File << tempname;
+                      tempname = "";
+                    }
+                    else if (temp[i] == ';'){
+                      r1File << tempname << "\n";
+                      tempname = "";
+                    }
+                    else if (temp[i] == '('){ 
+                      tempname = "";
+                      r1File << '(' << ' ';
+                    }
+                }
+              }
+            }
+            r1File << "endmodule" << endl;
+          }
+          else if (c == 1)
+          {
+            //cout << "c==0" << endl;
+            while(getline(pFile, temp))
+            {
+              if (temp.substr(0, 6) == "module") {
+                //cout << temp << endl;
+                r2File << temp << endl;
+                for (const auto &s : wireset_tmp) {
+                  nFile  << s << endl;
+                  r2File << wiretype[s] << ' ' << s << ';' << endl;
+                }
+              }
+              else if (temp.substr(0, 4) != "wire" and temp.substr(0, 5) != "input" and temp.substr(0, 6) != "output")
+              {
+                string tempname = "";
+                for (int i = 0; i < temp.size(); ++i)
+                {
+                    tempname = tempname + temp[i];
+                    if (temp[i] == ' '){
+                      r2File << tempname;
+                      tempname = "";
+                    }
+                    else if (temp[i] == ';'){
+                      r2File << tempname << "\n";
+                      tempname = "";
+                    }
+                    else if (temp[i] == '('){ 
+                      tempname = "";
+                      r2File << '(' << ' ';
+                    }
+                }
+              }
+            }
+            r2File << "endmodule" << endl;
+          }
+          pFile.close();
+      }
   }
+  //nFile << "wirelist" << endl;
+  //cout << wirelist.size() << endl;
+  r1File.close();
+  r2File.close();
+  nFile.close();
+
+  for (int i = 0; i < gatelist.size()/2; ++i)
+  {
+    gFile << gatelist[2*i] << ' ' << gatelist[2*i+1] << endl;
+  }
+  gFile.close();
+  pFileNames[c] = argv[c+1];
+  //to do
+
+  //fwrite( wire1 /n wire2 /n ..... ,nFile)
+  //fclose( nFile );
+  //fclose( gFile );
   return 0;
 }

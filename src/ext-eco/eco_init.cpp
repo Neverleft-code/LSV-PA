@@ -315,7 +315,7 @@ string& trim(string &s, string end=" ")
 
 void insertTarget(string inFName, string oFName="F.v")
 {
-    fstream fin, fout;
+    fstream fin, fout, wfout;
     string buf;
     
     vector<string> allWire;
@@ -343,6 +343,7 @@ void insertTarget(string inFName, string oFName="F.v")
 
     fin.open(inFName,ios::in);
     fout.open(oFName,ios::out);
+    wfout.open("weight.txt",ios::out);
     string line;
     vector<string>  splited;
     set<string> oNames, iNames;

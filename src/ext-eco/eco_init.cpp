@@ -59,6 +59,7 @@ using namespace std;
 
 static int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv);
 void insertTarget(string inFName, string oFName);
+void modifyIO_GFile();
 
 
 void init(Abc_Frame_t* pAbc) {
@@ -339,10 +340,14 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
   cout << "starts to insert target" << endl;
   insertTarget("F.v","F_t.v");
 
+  //////////// modify I/O port of G.v ////////////
+  modifyIO_GFile();
+
 
 
   return 0;
 }
+
 
 vector<string>  split(const string& str,const string& delim) {
     vector<string> res;
@@ -427,7 +432,10 @@ void insertTarget(string inFName, string oFName="F.v")
             continue;
         }
         if(line.find("wire")==0)
+        {
+            //fout << line << endl;
             continue;
+        }
         if(line.find("output")==0)
         {
             splited = split(line," ");
@@ -441,19 +449,25 @@ void insertTarget(string inFName, string oFName="F.v")
                 if(ind1!=string::npos)
                 {
                     //cout << "subStr:" << line.substr(ind1+1, ind2-ind1-1) << endl;
+                    
                     int arraySize = stoi(line.substr(ind1+1, ind2-ind1-1))+1;
                     for(int j=0;j<arraySize;j++)
                     {
                       string str2Insert = splited[i]+'['+to_string(j)+']';
                       //cout << "str2Insert: " << str2Insert << endl;
                       oNames.insert(str2Insert);
+                      fout << "output " << str2Insert << ";\n";
                     }
                 }
                 else
+                {
                     oNames.insert(splited[i]);
+                    //fout << line << endl;
+                }
                 wfout << splited[i] << " 1" << endl;
             }
-            fout << line << endl;
+            if(line.find("[")==string::npos)
+              fout << line << endl;
             
         }
         else if(line.find("input")==0)
@@ -473,14 +487,21 @@ void insertTarget(string inFName, string oFName="F.v")
                     int arraySize = stoi(line.substr(ind1+1, ind2-ind1-1))+1;
                     for(int j=0;j<arraySize;j++)
                     {
-                      iNames.insert(splited[i]+'['+to_string(j)+']');
+                      string str2Insert = splited[i]+'['+to_string(j)+']';
+                      iNames.insert(str2Insert);
+                      fout << "input " << str2Insert << ";\n";
                     }
                 }
                 else
+                {
                     iNames.insert(splited[i]);
+                    //fout << line << endl;
+                }
                 wfout << splited[i] << " 1" << endl;
             }
-            fout << line << endl;
+            if(line.find("[")==string::npos)
+              fout << line << endl;
+            
             
         }
         else if(line.find("assign")==0)
@@ -552,7 +573,7 @@ void insertTarget(string inFName, string oFName="F.v")
                 }
                 else//gate input
                 {
-                    if(allTarget.find(splited[i])!=allTarget.end())
+                    if(allTarget.find(splited[i])!=allTarget.end() && iNames.find(splited[i])==iNames.end())
                     {
                         //cout << "inputs: " << splited[i] << endl;
                         if(declaredWire.find(splited[i])==declaredWire.end())
@@ -590,8 +611,74 @@ void insertTarget(string inFName, string oFName="F.v")
     fout.close();
     wfout.close();
 
-    cout << "inputs: \n";
-    printSet(iNames); 
-    cout << "outputs: \n";
-    printSet(oNames);    
+    // cout << "inputs: \n";
+    // printSet(iNames); 
+    // cout << "outputs: \n";
+    // printSet(oNames);    
+}
+
+
+
+void modifyIO_GFile()
+{
+  fstream fin, fout;
+  fin.open("G.v",ios::in);
+  fout.open("G_t.v",ios::out);
+  string line;
+  vector<string> splited;
+  int num;
+  while(getline(fin,line))
+  {
+    if(line.find("input")==0)
+    {
+      if(line.find("[")==6)
+      {
+        splited = split(line," ");
+        int ind = splited[1].find(":");
+        num = stoi(splited[1].substr(1,ind-1))+1;
+        for(int i=2;i<splited.size();i++)
+        {
+          trim(splited[i],";");
+          trim(splited[i],",");
+          for(int j=0;j<num;j++)
+          {
+            fout << "input " << splited[i] << "[" << to_string(j) << "];\n";
+          }
+        }
+        
+      }
+      else
+      {
+        fout << line << endl;
+      }
+    }
+    else if(line.find("output")==0)
+    {
+      if(line.find("[")==7)
+      {
+        splited = split(line," ");
+        int ind = splited[1].find(":");
+        num = stoi(splited[1].substr(1,ind-1))+1;
+        for(int i=2;i<splited.size();i++)
+        {
+          trim(splited[i],";");
+          trim(splited[i],",");
+          for(int j=0;j<num;j++)
+          {
+            fout << "output " << splited[i] << "[" << to_string(j) << "];\n";
+          }
+        }
+      }
+      else
+      {
+        fout << line << endl;
+      }
+    }
+    else
+    {
+      fout << line << endl;
+    }
+  }
+  fin.close();
+  fout.close();
 }

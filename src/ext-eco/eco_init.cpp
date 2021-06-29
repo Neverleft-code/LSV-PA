@@ -88,7 +88,7 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
   ofstream r2File("G.v");
   if ( argc - 1 < 2 || argc - 1 > 3 )
   {
-      Abc_Print( 1, "Expecting three file names on the command line.\n" );
+      Abc_Print( 1, "Expecting two file names on the command line.\n" );
   }
   for ( c = 0; c < argc - 1; c++ )
   {
@@ -119,7 +119,7 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
                   title = title + temp[i];
                   if (title == "wire" or title == "input" or title == "output" or title == "and" 
                     or title == "or" or title == "nand" or title == "nor" or title == "not" 
-                    or title == "buf" or title == "xor" or title == "xnor") eol = false;
+                    or title == "buf" or title == "xor" or title == "xnor" or title == "assign") eol = false;
                 }
               }
               else
@@ -158,7 +158,7 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
                     gatelist.push_back(tempname);
                     tempname = "";
                   }
-                  else if (temp[i] == ')' or temp[i] == ','){
+                  else if (temp[i] == ')' or temp[i] == ',' or temp[i] == '='){
                     if (wiretype[tempname] == "" and tempname != "1'b1" and tempname != "1'b0" and tempname != "")
                     {
                       wireset_tmp.insert(tempname);
@@ -198,7 +198,8 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
                   else{
                     title = title + temp[i];
                     check_gate = false;
-                    if (title == "input" or title == "output" or title == "module") {
+                    if (title == "input" or title == "output" 
+                      or title == "module" or title == "assign") {
                         r1File << title;
                         eol = false;
                       }
@@ -220,7 +221,8 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
                 }
                 else
                 {
-                  if (title == "module" or title == "input" or title == "output")
+                  if (title == "module" or title == "input" 
+                    or title == "output" or title == "assign")
                   { 
                     r1File << temp[i];
                     if (temp[i] == ';') r1File << endl;
@@ -259,7 +261,8 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
                   else{
                     title = title + temp[i];
                     check_gate = false;
-                    if (title == "input" or title == "output" or title == "module") {
+                    if (title == "input" or title == "output" 
+                      or title == "module" or title == "assign") {
                         r2File << title;
                         eol = false;
                       }
@@ -277,7 +280,8 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
                 }
                 else
                 {
-                  if (title == "module" or title == "input" or title == "output")
+                  if (title == "module" or title == "input" 
+                    or title == "output" or title == "assign")
                   { 
                     r2File << temp[i];
                     if (temp[i] == ';') r2File << endl;

@@ -436,6 +436,26 @@ void insertTarget(string inFName, string oFName="F.v")
             fout << line << endl;
             
         }
+        else if(line.find("assign")==0)
+        {
+            splited = split(line," ");
+            assert(splited.size()==4);
+            if(oNames.find(splited[1])!=oNames.end() && allTarget.find(splited[1])!=allTarget.end())
+            {
+                fout << "assign " << splited[1] << " = t_" << splited[3] << endl;
+            }
+            else if(allTarget.find(splited[1])!=allTarget.end())
+            {
+                fout << "wire u_" << splited[1] << ";\n";
+                trim(splited[3],";");
+                if(declaredWire.find(splited[3])==declaredWire.end())
+                {
+                    fout << "wire t_" << splited[3] << ";" << endl;
+                    declaredWire.insert(splited[3]);    
+                }
+                fout << "assign u_" << splited[1] << " = t_" << splited[3] << ";\n";
+            }
+        }
         else
         {
             string gate = line.substr(0,line.find(" "));

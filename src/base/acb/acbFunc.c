@@ -1510,7 +1510,7 @@ char * Acb_EnumerateSatAssigns( sat_solver * pSat, int PivotVar, int FreeVar, Ve
     vLits = Vec_IntAlloc( 100 );
     for ( iMint = 0; ; iMint++ )
     {
-        if ( iMint == 1000 )
+        if ( iMint == 5000 )
         {
             if ( Vec_IntSize(vDivVars) == 0 )
             {
@@ -2734,6 +2734,7 @@ void Acb_NtkRunEco( char * pFileNames[4], int nTimeout, int fCheck, int fRandom,
     char Command[1000]; int Result = 1;
     Acb_Ntk_t * pNtkF = Acb_VerilogSimpleRead( pFileNames[0], pFileNames[2] );
     Acb_Ntk_t * pNtkG = Acb_VerilogSimpleRead( pFileNames[1], NULL );
+    //Acb_Ntk_t * pNtkG = Io_Read( pFileNames[1], IO_FILE_VERILOG, 1, 0 );
     if ( !pNtkF || !pNtkG )
         return;
     //int * pArray = Vec_IntArray( &pNtkF->vTargets );
@@ -2745,7 +2746,6 @@ void Acb_NtkRunEco( char * pFileNames[4], int nTimeout, int fCheck, int fRandom,
         Vec_IntPermute( &pNtkF->vTargets );
         Vec_IntPrint( &pNtkF->vTargets );
     }
-        
     assert( Acb_NtkCiNum(pNtkF) == Acb_NtkCiNum(pNtkG) );
     assert( Acb_NtkCoNum(pNtkF) == Acb_NtkCoNum(pNtkG) );
 

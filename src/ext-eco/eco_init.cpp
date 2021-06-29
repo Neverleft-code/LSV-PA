@@ -489,7 +489,7 @@ void insertTarget(string inFName, string oFName="F.v")
                 if(oNames.find(splited[3])!=oNames.end())
                     fout << line << endl;
                 else
-                    fout << "assign " << splited[1] << " = t_" << splited[3] << endl;
+                    fout << "assign " << splited[1] << " = t_" << splited[3] << ";" << endl;
             }
             else if(allTarget.find(splited[1])!=allTarget.end())
             {

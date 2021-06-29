@@ -369,6 +369,13 @@ string& trim(string &s, string end=" ")
     return s;
 }
 
+void printSet(set<string> s)
+{
+    for(auto& i: s)
+        cout << i << " , ";
+    cout << endl;
+}
+
 void insertTarget(string inFName, string oFName="F.v")
 {
     fstream fin, fout, wfout;
@@ -406,7 +413,7 @@ void insertTarget(string inFName, string oFName="F.v")
     set<string> declaredWire;
     while(getline(fin,line))
     {
-        cout << line << endl;
+        //cout << line << endl;
         if(line.find("module")==0 || line.find("endmodule")==0)
         {
             fout << line << endl;
@@ -417,11 +424,26 @@ void insertTarget(string inFName, string oFName="F.v")
         if(line.find("output")==0)
         {
             splited = split(line," ");
-            for(int i=1;i<splited.size();i++)
+            int stInd = line.find("[")==7 ? 2:1;
+            for(int i=stInd;i<splited.size();i++)
             {
                 trim(splited[i],";\n");
                 trim(splited[i],",");
-                oNames.insert(splited[i]);
+                int ind1 = line.find("[");
+                int ind2 = line.find(":");
+                if(ind1!=string::npos)
+                {
+                    //cout << "subStr:" << line.substr(ind1+1, ind2-ind1-1) << endl;
+                    int arraySize = stoi(line.substr(ind1+1, ind2-ind1-1))+1;
+                    for(int j=0;j<arraySize;j++)
+                    {
+                      string str2Insert = splited[i]+'['+to_string(j)+']';
+                      //cout << "str2Insert: " << str2Insert << endl;
+                      oNames.insert(str2Insert);
+                    }
+                }
+                else
+                    oNames.insert(splited[i]);
                 wfout << splited[i] << " 1" << endl;
             }
             fout << line << endl;
@@ -430,11 +452,25 @@ void insertTarget(string inFName, string oFName="F.v")
         else if(line.find("input")==0)
         {
             splited = split(line," ");
-            for(int i=1;i<splited.size();i++)
+            int stInd = line.find("[")==6 ? 2:1;
+            int ind1 = line.find("[");
+            int ind2 = line.find(":");
+            
+            for(int i=stInd;i<splited.size();i++)
             {
                 trim(splited[i],";\n");
                 trim(splited[i],",");
-                iNames.insert(splited[i]);
+                //cout << "splited: " << splited[i] << endl;
+                if(ind1!=string::npos)
+                {
+                    int arraySize = stoi(line.substr(ind1+1, ind2-ind1-1))+1;
+                    for(int j=0;j<arraySize;j++)
+                    {
+                      iNames.insert(splited[i]+'['+to_string(j)+']');
+                    }
+                }
+                else
+                    iNames.insert(splited[i]);
                 wfout << splited[i] << " 1" << endl;
             }
             fout << line << endl;
@@ -444,9 +480,15 @@ void insertTarget(string inFName, string oFName="F.v")
         {
             splited = split(line," ");
             assert(splited.size()==4);
+            cout << "string to search: " << splited[1] << " and " << splited[3] << endl;
             if(oNames.find(splited[1])!=oNames.end() && allTarget.find(splited[1])!=allTarget.end())
             {
-                fout << "assign " << splited[1] << " = t_" << splited[3] << endl;
+                trim(splited[3],";");
+                cout << "found: " << (oNames.find(splited[3])!=oNames.end()) << endl;
+                if(oNames.find(splited[3])!=oNames.end())
+                    fout << line << endl;
+                else
+                    fout << "assign " << splited[1] << " = t_" << splited[3] << endl;
             }
             else if(allTarget.find(splited[1])!=allTarget.end())
             {
@@ -467,20 +509,20 @@ void insertTarget(string inFName, string oFName="F.v")
             size_t st=line.find("("), end=line.find(")");
             string wireStr = line.substr(st+1,end-st-1);
             trim(wireStr);
-            cout << "wireStr: " << wireStr << endl;
+            //cout << "wireStr: " << wireStr << endl;
             splited = split(wireStr," ");
             for(int i=0;i<splited.size();i++)//for each pin of a gate
             {
                 trim(splited[i],",");
                 if(splited[i]=="")
                     continue;
-                cout << i << ": " << splited[i] << endl;
+                //cout << i << ": " << splited[i] << endl;
                 if(i==0)//gate output
                 {
                     //the pin is PO and is target
                     if(oNames.find(splited[i])!=oNames.end() && allTarget.find(splited[i])!=allTarget.end())
                     {
-                        cout << "outputs: " << splited[i] << endl;
+                        //cout << "outputs: " << splited[i] << endl;
                         fout << "wire t_" << splited[i] << ", u_" << splited[i] << ";\n";
                         fout << "buf (" << splited[i] << ",t_" << splited[i] << ");\n";
                         splited[i] = "u_"+splited[i];
@@ -489,7 +531,7 @@ void insertTarget(string inFName, string oFName="F.v")
                     //the pin is internal wire and is target
                     else if(allTarget.find(splited[i])!=allTarget.end())
                     {
-                        cout << "wires: " << splited[i] << endl;
+                        //cout << "wires: " << splited[i] << endl;
                         fout << "wire u_" << splited[i] << ";\n";
                         splited[i] = "u_"+splited[i];
                         wfout << splited[i] << " 1" << endl;
@@ -505,7 +547,7 @@ void insertTarget(string inFName, string oFName="F.v")
                 {
                     if(allTarget.find(splited[i])!=allTarget.end())
                     {
-                        cout << "inputs: " << splited[i] << endl;
+                        //cout << "inputs: " << splited[i] << endl;
                         if(declaredWire.find(splited[i])==declaredWire.end())
                         {
                             fout << "wire t_" << splited[i] << ";" << endl;
@@ -540,4 +582,9 @@ void insertTarget(string inFName, string oFName="F.v")
     fin.close();
     fout.close();
     wfout.close();
+
+    cout << "inputs: \n";
+    printSet(iNames); 
+    cout << "outputs: \n";
+    printSet(oNames);    
 }

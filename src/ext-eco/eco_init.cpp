@@ -199,12 +199,12 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
                     title = title + temp[i];
                     check_gate = false;
                     if (title == "input" or title == "output" 
-                      or title == "module" or title == "assign") {
+                      or title == "module") {
                         r1File << title;
                         eol = false;
                       }
                     else if (title == "and" or title == "or" or title == "nand" or title == "nor" 
-                      or title == "not" or title == "buf" or title == "xor" or title == "xnor")
+                      or title == "not" or title == "buf" or title == "xor" or title == "xnor" or title == "assign")
                     {
                       if (check_wire) {
                         check_wire = false;
@@ -262,12 +262,12 @@ int Abc_CommandRunEco_test(Abc_Frame_t* pAbc, int argc, char** argv) {
                     title = title + temp[i];
                     check_gate = false;
                     if (title == "input" or title == "output" 
-                      or title == "module" or title == "assign") {
+                      or title == "module") {
                         r2File << title;
                         eol = false;
                       }
                     else if (title == "and" or title == "or" or title == "nand" or title == "nor" 
-                      or title == "not" or title == "buf" or title == "xor" or title == "xnor")
+                      or title == "not" or title == "buf" or title == "xor" or title == "xnor" or title == "assign")
                     {
                       if (check_wire) {
                         check_wire = false;

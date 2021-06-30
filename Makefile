@@ -211,7 +211,7 @@ depend: $(DEP)
 clean:
 	@echo "$(MSG_PREFIX)\`\` Cleaning up..."
 	$(VERBOSE)rm -rvf $(PROG) lib$(PROG).a $(OBJ) $(GARBAGE) $(OBJ:.o=.d)
-	rm -f eco
+	rm -f eco eco.o
 
 tags:
 	etags `find . -type f -regex '.*\.\(c\|h\)'`

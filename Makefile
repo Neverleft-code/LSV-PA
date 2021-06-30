@@ -35,8 +35,12 @@ MODULES := \
 	src/aig/aig src/aig/saig src/aig/gia src/aig/ioa src/aig/ivy src/aig/hop \
 	src/aig/miniaig
 
-all: $(PROG)
+all: $(PROG) eco
 default: $(PROG)
+
+eco: eco.cpp
+	$(CXX) -c -g eco.cpp
+	$(CXX) -o eco eco.o
 
 ARCHFLAGS_EXE ?= ./arch_flags
 
@@ -207,6 +211,7 @@ depend: $(DEP)
 clean:
 	@echo "$(MSG_PREFIX)\`\` Cleaning up..."
 	$(VERBOSE)rm -rvf $(PROG) lib$(PROG).a $(OBJ) $(GARBAGE) $(OBJ:.o=.d)
+	rm -f eco
 
 tags:
 	etags `find . -type f -regex '.*\.\(c\|h\)'`

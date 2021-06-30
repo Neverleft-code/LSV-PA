@@ -684,36 +684,3 @@ void modifyIO_GFile()
   fout.close();
 }
 
-void fitoutformat(){
-    fstream inFile, outFile;
-    inFile.open("patch.v",ios::in);
-    outFile.open("patch_final.v",ios::out);
-    string line;
-    string addin = "_in";
-    int pos = 0, pos2 = 0;
-    int pos3 = 0;
-    int flag = 0;
-    while(getline(inFile,line)){
-        if(line.find("input") != -1) flag = 1;
-        while(pos != -1 || pos2 != -1){
-            pos = line.find("t_");
-            if(pos != -1) line.erase(pos,2);
-            pos2 = line.find("u_");
-            if(pos2 != -1) {
-                line.erase(pos2,2);
-                string temp = line.substr(pos2);
-                pos3 = temp.find(",");
-                if(pos3 == -1){
-                    if(flag == 1) pos3 = temp.find(";");
-                    else pos3 = temp.find(" ");
-                }
-                line.insert(pos3+pos2, addin);
-            }
-        }
-        outFile<<line<<endl;
-        pos = 0;
-        pos2 = 0;
-        pos3 = 0;
-        flag = 0;
-    }
-}

@@ -470,6 +470,7 @@ void insertTarget(string inFName, string oFName="F.v")
             if(line.find("[")==string::npos)
               fout << line << endl;
             
+            allTarget = oNames;
         }
         else if(line.find("input")==0)
         {
@@ -568,6 +569,7 @@ void insertTarget(string inFName, string oFName="F.v")
                     //the pin isn't a target
                     else
                     {
+                        fout << "wire " << splited[i] << ";\n";
                         wfout << splited[i] << " 1" << endl;
                         continue;
                     }
@@ -587,6 +589,7 @@ void insertTarget(string inFName, string oFName="F.v")
                     //the pin isn't a target
                     else
                     {
+                        fout << "wire " << splited[i] << ";\n";
                         continue;
                     }
                 }
